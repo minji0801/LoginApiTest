@@ -252,6 +252,119 @@
 
 
     $(function () {
+
+        var arr = location.search.split("?");
+        var EML_ID = arr[2];
+        console.log(EML_ID);
+
+        if (arr[1] == "r") {
+
+            // 답장
+            console.log("답장");
+
+            $.ajax({
+                type: 'GET',
+                url: '/api/getContents/' + EML_ID,
+                success: function (response) {
+
+                    if (response.data[0].EML_Subject == "") {   // RE: 제목
+
+                        $("#subject").dxTextBox("instance").option("value", "RE: 제목없음");
+
+                    } else {
+
+                        $("#subject").dxTextBox("instance").option("value", "RE: " + response.data[0].EML_Subject);
+
+                    }
+
+                    $("#to").dxTextBox("instance").option("value", response.data[0].EML_From);  // 보낸사람 -> 받는사람
+
+                    appendEditor(response); // 내용
+                }
+            });
+        }
+        else if (arr[1] == "rA") {
+
+            // 전체답장
+            console.log("전체답장");
+
+            $.ajax({
+                type: 'GET',
+                url: '/api/getContents/' + EML_ID,
+                success: function (response) {
+
+                    if (response.data[0].EML_Subject == "") {   // RE: 제목
+
+                        $("#subject").dxTextBox("instance").option("value", "RE: 제목없음");
+
+                    } else {
+
+                        $("#subject").dxTextBox("instance").option("value", "RE: " + response.data[0].EML_Subject);
+
+                    }
+
+                    if (response.data[0].EML_To == "") {    // 보낸사람, 다른 받는사람 -> 받는사람
+
+                        $("#to").dxTextBox("instance").option("value", response.data[0].EML_From);
+
+                    } else {
+
+                        $("#to").dxTextBox("instance").option("value", response.data[0].EML_From);
+
+                        console.log(response.data[0].EML_To.split(", "));
+
+                        var toList = response.data[0].EML_To.split(", ");
+
+                        var toValue = $("#to").dxTextBox("instance").option('value');
+
+                        for (i = 1; i < toList.length; i++) {
+
+                            toValue += ", " + toList[i];
+                        }
+
+                        console.log(toValue);
+
+                        $("#to").dxTextBox("instance").option("value", toValue);
+                    }
+
+                    if (response.data[0].EML_Cc == "") {    // 참조
+
+                        $("#cc").dxTextBox("instance").option("value", "");
+
+                    } else {
+
+                        console.log(response.data[0].EML_Cc.split(", "));
+
+                        var ccList = response.data[0].EML_Cc.split(", ");
+
+                        var ccValue = $("#cc").dxTextBox("instance").option('value');
+
+                        for (i = 0; i < ccList.length; i++) {
+
+                            if (i == 0) {
+                                ccValue += ccList[i];
+                            } else {
+                                ccValue += ", " + ccList[i];
+                            }
+                        }
+
+                        console.log(ccValue);
+
+                        $("#cc").dxTextBox("instance").option("value", ccValue);
+                    }
+
+                    appendEditor(response); // 내용
+                }
+            });
+        }
+        else if (arr[1] == "d") {
+
+            // 전달
+            console.log("전달");
+
+            // 전달은 아직 구현 안됨.
+        }
+
         fileDropDown();
 
         $("#summary").dxValidationSummary({});
@@ -286,20 +399,20 @@
             validationRules: [{
                 type: "required",
                 message: "받는사람 메일주소를 입력해주세요."
-            }, {
+            }/* , {
                 type: "email",
                 message: "메일주소 형식이 올바르지 않습니다."
-            }]
+            } */]
         });
         $("#cc").dxTextBox({
             // value: "unseob2@gmail.com"
             //value: "kimminji080122@gmail.com"
-        }).dxValidator({
+        })/* .dxValidator({
             validationRules: [{
                 type: "email",
                 message: "메일주소 형식이 올바르지 않습니다."
             }]
-        });
+        }) */;
         $("#subject").dxTextBox({
             value: "테스트 이메일"
         });
@@ -313,6 +426,27 @@
             }
         });
     });
+
+    function appendEditor(response) {
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append("&#65279;---원본메일---");
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append("&#65279;보낸사람: " + response.data[0].EML_From);
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append("&#65279;받는사람: " + response.data[0].EML_To);
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append("&#65279;참조: " + response.data[0].EML_Cc);
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append("&#65279;날짜: " + response.data[0].EML_Date);
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append("&#65279;제목: " + response.data[0].EML_Subject);
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append($("<br>"));
+        $(".jodit-wysiwyg").append("&#65279;" + response.data[0].EML_Contents);
+    }
 
     const editor = new Jodit('#editor', {
         // defaultMode: Jodit.MODE_SPLIT // html 태그 보이기
@@ -585,8 +719,42 @@
         var formData = new FormData();
 
         formData.append('pFrom', $("#from").dxTextBox('option', 'value'));
-        formData.append('pTo', $("#to").dxTextBox('option', 'value'));
-        formData.append('pCc', $("#cc").dxTextBox('option', 'value'));
+
+        var toValue = $("#to").dxTextBox('option', 'value');
+        if (toValue.indexOf(", ") == -1) {
+
+            // 받는사람 한 명
+            console.log("받는사람 한 명");
+            formData.append('pTo', toValue);
+
+        } else {
+
+            // 받는사람 여러 명
+            console.log("받는사람 여러 명");
+            var toList = toValue.split(", ");
+
+            for (i = 0; i < toList.length; i++) {
+                formData.append('pTo', toList[i]);
+            }
+        }
+
+        var ccValue = $("#cc").dxTextBox('option', 'value');
+        if (ccValue.indexOf(", ") == -1) {
+
+            // 참조 한 명
+            console.log("참조 한 명");
+            formData.append('pCc', ccValue);
+
+        } else {
+
+            // 참조 여러 명
+            console.log("참조 여러 명");
+            var ccList = ccValue.split(", ");
+
+            for (i = 0; i < ccList.length; i++) {
+                formData.append('pCc', ccList[i]);
+            }
+        }
         formData.append('pSubject', $("#subject").dxTextBox('option', 'value'));
         formData.append('pHtmlText', editor.value);
 

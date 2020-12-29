@@ -12,7 +12,7 @@
     <title>받은메일함 | View Mail</title>
     <style>
         #emailTree {
-            height: 650px;
+            height: 550px;
         }
 
         ul {
@@ -94,11 +94,20 @@
     const sideBtnCountDown = Math.floor((pageCount - 1) / 2);   // 중앙을 기준으로 양쪽에 위치할 버튼 수(내림)
 
     // 페이지 버튼 클릭 시 실행
-    function btn_paging_click(page) {
+    function btn_paging_click(page, pagingID) {
 
         nowPage = page;
-        RefreshData();
 
+        if (pagingID == 0) {
+
+            // 기본페이징
+            RefreshData();
+        }
+        else if (pagingID == 1) {
+
+            // 검색페이징
+            searchBindData();
+        }
     }
 
     // 투명버튼 만드는 함수
@@ -107,8 +116,8 @@
     }
 
     // << < > >> 버튼 만드는 함수
-    function movePageBtn(id, clickEvent, content) {
-        return '<li class="pagination-item"><button id="' + id + '" onclick="btn_paging_click(' + clickEvent +
+    function movePageBtn(id, clickEvent, content, pagingID) {
+        return '<li class="pagination-item"><button id="' + id + '" onclick="btn_paging_click(' + clickEvent + ', ' + pagingID +
             ');" style="cursor: pointer;">' + content + '</button></li>';
     }
 
@@ -119,14 +128,14 @@
     }
 
     // (현재페이지를 제외한)나머지페이지 버튼 만드는 함수
-    function restPageBtn(content) {
-        return '<li class="pagination-item"><button onclick="btn_paging_click(' + content +
+    function restPageBtn(content, pagingID) {
+        return '<li class="pagination-item"><button onclick="btn_paging_click(' + content + ', ' + pagingID +
             ');" style="cursor: pointer;">' + content + '</button></li>';
     }
 
 
     // 페이징(이전, 다음 클릭 시 페이지 그룹 단위로 이동)
-    function moveByGroup(totalData, currentPage) {
+    function moveByGroup(totalData, currentPage, pagingID) {
 
         const totalPage = Math.ceil(totalData / dataPerPage);   // 총 페이지 수
         const pageGroup = Math.ceil(currentPage / pageCount);   // 페이지 그룹
@@ -155,15 +164,15 @@
                     pages.append(currentPageBtn(j));
                 }
                 else if (j > 0) {
-                    pages.append(restPageBtn(j));
+                    pages.append(restPageBtn(j, pagingID));
                 }
             }
         }
 
         // 두 그룹 이상일때
         else {
-            pages.append(movePageBtn('home', 1, '<<'));     // 처음
-            pages.append(movePageBtn('prev1', prev, '<'));  // 이전
+            pages.append(movePageBtn('home', 1, '<<', pagingID));     // 처음
+            pages.append(movePageBtn('prev1', prev, '<', pagingID));  // 이전
 
             // 페이지 버튼
             for (let j = first; j <= last; j++) {
@@ -172,12 +181,12 @@
                     pages.append(currentPageBtn(j));
                 }
                 else if (j > 0) {
-                    pages.append(restPageBtn(j));
+                    pages.append(restPageBtn(j, pagingID));
                 } else { }
             }
 
-            pages.append(movePageBtn('next1', next, '>'));      // 다음
-            pages.append(movePageBtn('end', totalPage, '>>'));  // 맨끝
+            pages.append(movePageBtn('next1', next, '>', pagingID));      // 다음
+            pages.append(movePageBtn('end', totalPage, '>>', pagingID));  // 맨끝
 
             if (pageGroup == 1) {
 
@@ -219,7 +228,7 @@
                 var tEMLCnt = JSON.stringify(response.tEMLCnt[0].tEMLCnt).replace(/"/g, '');
                 console.log(tEMLCnt);
 
-                moveByGroup(tEMLCnt, nowPage);
+                moveByGroup(tEMLCnt, nowPage, 0);
 
                 // 모바일인지 체크해서 tree를 다르게 보여주면 좋겠다..
 
@@ -268,12 +277,85 @@
         BindData();
     }
 
+    function searchBindData() {
+
+        var value = $(".dx-texteditor-input").val(); // 검색내용
+
+        $.ajax({
+            url: '/api/searchMail',
+            type: 'POST',
+            data: { text: value, pPage: nowPage, pPageCount: dataPerPage },
+            dataType: "json"
+            , success: function (response) {
+
+                var emlSCnt = JSON.stringify(response.emlSCnt[0].emlSCnt).replace(/"/g, '');
+                console.log(emlSCnt);
+
+                $("#pages_moveByGroup").children().remove();
+                moveByGroup(emlSCnt, nowPage, 1);
+
+                $("#emailTree").dxTreeList("dispose");
+
+                $("#emailTree").dxTreeList({
+                    dataSource: response.data,
+                    rootValue: 0,
+                    keyExpr: "EML_ID",
+                    columns: [
+
+                        {
+                            dataField: "EML_From",
+                            caption: "보낸사람",
+                            width: 250
+                        },
+                        {
+                            dataField: "EML_Subject",
+                            caption: "제목"
+                        },
+                        {
+                            dataField: "EML_Date",
+                            caption: "날짜",
+                            dataType: "datetime",
+                            format: "yy.MM.dd hh:mm",
+                            width: 130
+                        }
+
+                    ],
+                    scrolling: { mode: "standard" },
+                    sorting: { mode: "none" },
+                    selection: { mode: "single" },
+                    showRowLines: true,
+                    showBorders: true,
+                    columnAutoWidth: true,
+                    onRowClick: function (e) {
+                        location.href = "contentmail?" + e.data.EML_ID;
+                    }
+                });
+            }
+        })
+    }
+
     $(function () {
         BindData();
 
         $("#searchMail").dxTextBox({
             placeholder: "메일검색",
-            showClearButton: true
+            showClearButton: true,
+            onEnterKey: function (e) {
+
+                // 엔터 누르면 검색하기
+
+                searchBindData();
+
+                // 첫번째 페이징 버튼 눌리게 하기
+                btn_paging_click(1, 1);
+            },
+            onInput: function (e) {
+
+                if ($(".dx-texteditor-input").val() == "") {
+
+                    RefreshData();
+                }
+            }
         });
     });
 </script>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>LOGIN API TEST</title>
+    <script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
+    <script type="text/javascript" src="https://static.nid.naver.com/js/naveridlogin_js_sdk_2.0.0.js"
+        charset="utf-8"></script>
+    <script>
+        // SDK를 초기화 합니다. 사용할 앱의 JavaScript 키를 설정해 주세요.
+        Kakao.init('1a6728111d5e4792764efa2cb4110e9d');
+        // SDK 초기화 여부를 판단합니다.
+        console.log(Kakao.isInitialized());
+    </script>
+</head>
+
+<body>
+    <div>
+        <a id="kakao-login-btn"></a>
+    </div>
+    <div>
+        <button class="api-btn" onclick="kakaoLogout()">카카오 로그아웃</button>
+    </div>
+    <div>
+        <a id="custom-login-btn" href="javascript:loginWithKakao()">
+            <img src="//k.kakaocdn.net/14/dn/btqCn0WEmI3/nijroPfbpCa4at5EIsjyf0/o.jpg" width="222" />
+        </a>
+        <p id="token-result"></p>
+    </div>
+
+    <!-- 네이버아이디로로그인 버튼 노출 영역 -->
+    <div id="naverIdLogin"></div>
+    <div>
+        <button class="api-btn" onclick="naverLogout()">네이버 로그아웃</button>
+    </div>
+
+    <script type="text/javascript">
+        Kakao.Auth.createLoginButton({
+            container: '#kakao-login-btn',
+            success: function (authObj) {
+                Kakao.API.request({
+                    url: '/v2/user/me',
+                    success: function (res) {
+                        alert(JSON.stringify(res))
+                    },
+                    fail: function (error) {
+                        alert(
+                            'login success, but failed to request user information: ' +
+                            JSON.stringify(error)
+                        )
+                    },
+                })
+            },
+            fail: function (err) {
+                alert('failed to login: ' + JSON.stringify(err))
+            },
+        })
+
+        function kakaoLogout() {
+            if (!Kakao.Auth.getAccessToken()) {
+                alert('Not logged in.')
+                return
+            }
+            Kakao.Auth.logout(function () {
+                alert('logout ok\naccess token -> ' + Kakao.Auth.getAccessToken())
+            })
+        }
+
+        function loginWithKakao() {
+            Kakao.Auth.authorize({
+                redirectUri: 'http://localhost:8087/loginapi',
+                reauthenticate: true
+            })
+            window.Kakao.Auth.authorize(redirectUri);
+        }
+        // 아래는 데모를 위한 UI 코드입니다.
+        displayToken()
+        function displayToken() {
+            const token = getCookie('reauthenticate-access-token')
+            if (token) {
+                Kakao.Auth.setAccessToken(token)
+                Kakao.Auth.getStatusInfo(({ status }) => {
+                    if (status === 'connected') {
+                        console.log('login success. token: ' + Kakao.Auth.getAccessToken());
+                    } else {
+                        Kakao.Auth.setAccessToken(null)
+                    }
+                })
+            }
+        }
+        function getCookie(name) {
+            const value = "; " + document.cookie;
+            const parts = value.split("; " + name + "=");
+            if (parts.length === 2) return parts.pop().split(";").shift();
+        }
+
+
+        //네이버아디디로로그인 초기화 Script
+        var naverLogin = new naver.LoginWithNaverId(
+            {
+                clientId: "oRrVJBcDfd5RwiQWGNxS",
+                callbackUrl: "http://localhost:8087/loginapi/callback",
+                isPopup: false, //팝업을 통한 연동처리 여부
+                callbackHandle: false,
+                loginButton: { color: "green", type: 3, height: 50 } //로그인 버튼의 타입을 지정
+            }
+        );
+
+        //설정정보를 초기화하고 연동을 준비
+        naverLogin.init();
+
+        function naverLogout() {
+            
+            window.location = "http://nid.naver.com/nidlogin.logout";
+        }
+
+    </script>
+</body>
+
+</html>

@@ -13,11 +13,11 @@ const config = {
     // "options"   : {
     //     "encrypt" : false
     // }
-    "user": "test",
+    "user": "sa",
     "password": "qw12qw12",
     //"server"    : "192.168.0.135",
-    //"server": "192.168.0.181",
-    "server": "192.168.35.17",
+    "server": "192.168.0.134",
+    // "server": "192.168.35.115",
     "port": 1433,
     "database": "aTEST",
     // "timezone"  : 'utc',
@@ -27,9 +27,9 @@ const config = {
     }
 }
 
-router.get('/', function (req, res, next) {
+/* router.get('/', function (req, res, next) {
     res.render('login');
-})
+}) */
 
 router.get('/chat', function (req, res, next) {
     res.render('chat');
@@ -82,11 +82,20 @@ router.get('/contentMail', function (req, res, next) {
     res.render('content_mail');
 });
 
-router.get('/kakao', function (req, res, next) {
-    console.log('kakao');
-    
-    res.render('kakao');
+
+router.get('/loginAPI', function (req, res, next) {
+    console.log('login api test');
+
+    res.render('login_api_test');
 });
+
+router.get('/loginapi/callback', function (req, res, next) {
+    console.log('loginapi callback');
+
+    res.render('loginapi_callback');
+});
+
+
 //리치 에디트 글 화면 이후 글 작성으로 넘어갈 화면임
 // router.get('/editor',function(req,res,next){
 //     console.log('listen editor!!');

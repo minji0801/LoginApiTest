@@ -30,10 +30,10 @@ const config = {
     // "options"   : {
     //     "encrypt" : false
     // }
-    "user": "test",
+    "user": "sa",
     "password": "qw12qw12",
-    "server": "192.168.35.17",
-    //"server": "192.168.0.181",
+    "server": "192.168.0.134",
+    // "server": "192.168.35.115",
     //"server"    : "192.168.0.135",
     "port": 1433,
     "database": "aTEST",
@@ -43,6 +43,37 @@ const config = {
         enableArithAbort: true
     }
 }
+
+
+// "/certifications"에 대한 POST 요청을 처리하는 controller
+router.post("/certifications", async (request, response) => {
+    console.log(request.body);
+    const { imp_uid } = request.body; // request의 body에서 imp_uid 추출
+    
+    try {
+        // 인증 토큰 발급 받기
+        const getToken = await axios({
+          url: "https://api.iamport.kr/users/getToken",
+          method: "post", // POST method
+          headers: { "Content-Type": "application/json" }, // "Content-Type": "application/json"
+          data: {
+            imp_key: "imp_apikey", // REST API키
+            imp_secret: "ekKoeW8RyKuT0zgaZsUtXXTLQ4AhPFW3ZGseDA6bkA5lamv9OqDMnxyeB9wqOsuO9W3Mx9YSJ4dTqJ3f" // REST API Secret
+          }
+        });
+        const { access_token } = getToken.data.response; // 인증 토큰
+
+        // imp_uid로 인증 정보 조회
+        const getCertifications = await axios({
+            //url: \`https://api.iamport.kr/certifications/\${imp_uid}\`, // imp_uid 전달
+            method: "get", // GET method
+            headers: { "Authorization": access_token } // 인증 토큰 Authorization header에 추가
+        });
+        const certificationsInfo = getCertifications.data.response; // 조회한 인증 정보
+    } catch(e) {
+        console.error(e);
+    }
+});
 
 // 수신메일 데이터 (페이징해서) 가져오기
 router.post('/getMailData', function (req, res, next) {
@@ -74,6 +105,45 @@ router.post('/getMailData', function (req, res, next) {
                     console.log(JSON.stringify(tEMLCnt));
 
                     res.json({ data: returnData, tEMLCnt: tEMLCnt });
+                })
+            })
+        });
+    }
+    catch (err) {
+        console.log(err);
+    }
+});
+
+router.post('/searchMail', function (req, res, next) {
+    try {
+
+        console.log('search mail');
+        console.log(req.body.text);
+        console.log(req.body.pPage);
+        console.log(req.body.pPageCount);
+
+        mssql.connect(config, function (err) {
+
+            console.log('Connect');
+            var request = new mssql.Request();
+
+            var queryString = "EXEC p__EML_S '" + req.body.text + "', " + req.body.pPage + ", " + req.body.pPageCount;
+
+            var getCountQuery = "EXEC p__EML_SC '" + req.body.text + "'";
+
+            request.query(queryString, function (err, result) {
+
+                var returnData = result.recordset;
+
+                //console.log(JSON.stringify(returnData));
+
+                request.query(getCountQuery, function (err, getCountResult) {
+
+                    var emlSCnt = getCountResult.recordset;
+
+                    console.log(JSON.stringify(emlSCnt));
+
+                    res.json({ data: returnData, emlSCnt: emlSCnt });
                 })
             })
         });
@@ -950,6 +1020,7 @@ router.post('/sendMail', upload.any(), async function (req, res, next) {
     try {
         console.log('api : sendMail');
         console.log('받는사람 : ' + req.body.pTo);
+        console.log('참조 : ' + req.body.pCc);
         console.log(req.files);
         console.log('파일개수 : ' + req.body.pFileCount);
 
@@ -1001,7 +1072,7 @@ router.post('/sendMail', upload.any(), async function (req, res, next) {
         //const html = new DomParser().parseFromString(, "text/html");
         // console.log(html);
 
-        console.log(dom.window.document);
+        //console.log(dom.window.document);
 
         // img tag가 여러개인데 하나밖에 못가져온다
         // All 로 가져오면 전체 가져옴
@@ -1109,7 +1180,7 @@ router.post('/sendMail', upload.any(), async function (req, res, next) {
             html: dom.window.document.documentElement.outerHTML, // html body
             attachments: JSON.parse(attachment)
         }
-        console.log(emlData);
+        //console.log(emlData);
 
         let info = await transporter.sendMail(emlData);
 

@@ -11,6 +11,10 @@
 
     <title id="title">Content Mail</title>
     <style>
+        .buttons {
+            padding: 20px;
+            border-bottom: 1px solid #ececec;
+        }
         .viewer_header {
             padding: 20px;
             border-bottom: 1px solid #ececec;
@@ -87,6 +91,11 @@
 
 <body class="dx-viewport">
     <div class="demo-container">
+        <div class="buttons">
+            <div id="reply">답장</div>
+            <div id="replyAll">전체답장</div>
+            <div id="delivery">전달</div>
+        </div>
         <div class="viewer_header">
             <div id="subject"></div>
             <div id="date"></div>
@@ -185,15 +194,44 @@
 
                     attachTag += '<ul class="list-inline">';
 
-                    $('#at').append(
-                        attachTag
-                    );
+                    $('#at').append(attachTag);
 
                 } else {
                     $(".mail_file").remove();
                 }
 
                 $(".txt_mailview").append(response.data[0].EML_Contents);     // 내용
+            }
+        });
+
+        $("#reply").dxButton({
+            stylingMode: "contained",
+            text: "Contained",
+            type: "normal",
+            height: 30,
+            onClick: function() {
+
+                location.href = "sendmail?r?" + EML_ID;
+            }
+        });
+        $("#replyAll").dxButton({
+            stylingMode: "contained",
+            text: "Contained",
+            type: "normal",
+            height: 30,
+            onClick: function() {
+                
+                location.href = "sendmail?rA?" + EML_ID;
+            }
+        });
+        $("#delivery").dxButton({
+            stylingMode: "contained",
+            text: "Contained",
+            type: "normal",
+            height: 30,
+            onClick: function() {
+                
+                location.href = "sendmail?d?" + EML_ID;
             }
         });
     });
