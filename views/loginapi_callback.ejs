@@ -21,7 +21,7 @@
 		var naverLogin = new naver.LoginWithNaverId(
 			{
 				clientId: "oRrVJBcDfd5RwiQWGNxS",
-				callbackUrl: "http://localhost:8087/loginapi",
+				callbackUrl: "http://192.168.0.134:8087/loginapi",
 				isPopup: false,
 				callbackHandle: true
 				/* callback 페이지가 분리되었을 경우에 callback 페이지에서는 callback처리를 해줄수 있도록 설정합니다. */
@@ -52,28 +52,29 @@
 		}); */
 
 		naverLogin.getLoginStatus(function (status) {
-		if (status) {
-			var email = naverLogin.user.getEmail();
-			var name = naverLogin.user.getName();
-			var nickname = naverLogin.user.getNickName();
-			var profileImage = naverLogin.user.getProfileImage();
-			var birthday = naverLogin.user.getBirthday();			
-			var uniqId = naverLogin.user.getId();
-			var age = naverLogin.user.getAge();
-			var gender = naverLogin.user.getGender();
+			console.log(status);
+			if (status) {
+				var email = naverLogin.user.getEmail();
+				var name = naverLogin.user.getName();
+				var nickname = naverLogin.user.getNickName();
+				var profileImage = naverLogin.user.getProfileImage();
+				var birthday = naverLogin.user.getBirthday();			
+				var uniqId = naverLogin.user.getId();
+				var age = naverLogin.user.getAge();
+				var gender = naverLogin.user.getGender();
 
-			console.log("email : " + email);
-			console.log("name : " + name);
-			console.log("nickname : " + nickname);
-			console.log("profileImage : " + profileImage);
-			console.log("birthday : " + birthday);
-			console.log("uniqId : " + uniqId);
-			console.log("age : " + age);
-			console.log("gender : " + gender);
-		} else {
-			console.log("AccessToken이 올바르지 않습니다.");
-		}
-	});
+				console.log("email : " + email);
+				console.log("name : " + name);
+				console.log("nickname : " + nickname);
+				console.log("profileImage : " + profileImage);
+				console.log("birthday : " + birthday);
+				console.log("uniqId : " + uniqId);
+				console.log("age : " + age);
+				console.log("gender : " + gender);
+			} else {
+				console.log("AccessToken이 올바르지 않습니다.");
+			}
+		});
 	</script>
 </body>
 

@@ -95,6 +95,12 @@ router.get('/loginapi/callback', function (req, res, next) {
     res.render('loginapi_callback');
 });
 
+router.get('', function (req, res, next) {
+    console.log('login api test');
+
+    res.render('login_api_test');
+});
+
 
 //리치 에디트 글 화면 이후 글 작성으로 넘어갈 화면임
 // router.get('/editor',function(req,res,next){

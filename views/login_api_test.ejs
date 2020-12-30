@@ -3,46 +3,86 @@
 
 <head>
     <meta charset="utf-8" />
+    <!-- google meta -->
+    <meta name="google-signin-scope" content="profile email">
+    <meta name="google-signin-client_id"
+        content="444209988564-icuf01ha0lv19lco18abrk3a1unc7nrd.apps.googleusercontent.com">
     <title>LOGIN API TEST</title>
+    <!-- kakao js -->
     <script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
+    <!-- naver js -->
     <script type="text/javascript" src="https://static.nid.naver.com/js/naveridlogin_js_sdk_2.0.0.js"
         charset="utf-8"></script>
-    <script>
-        // SDK를 초기화 합니다. 사용할 앱의 JavaScript 키를 설정해 주세요.
-        Kakao.init('1a6728111d5e4792764efa2cb4110e9d');
-        // SDK 초기화 여부를 판단합니다.
-        console.log(Kakao.isInitialized());
-    </script>
+    <!-- facebook js -->
+    <script async defer crossorigin="anonymous"
+        src="https://connect.facebook.net/ko_KR/sdk.js#xfbml=1&version=v9.0&appId=318717096018592&autoLogAppEvents=1"
+        nonce="0rfhVCEz"></script>
+    <!-- google js -->
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <!-- jQuery -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <!-- iamport.payment.js -->
+    <script type="text/javascript" src="https://cdn.iamport.kr/js/iamport.payment-1.1.5.js"></script>
 </head>
+<style>
+    .m-20 {
+        margin: 20px;
+    }
+</style>
 
 <body>
-    <div>
+
+    <div class="m-20">
         <a id="kakao-login-btn"></a>
     </div>
-    <div>
+    <div class="m-20">
         <button class="api-btn" onclick="kakaoLogout()">카카오 로그아웃</button>
-    </div>
-    <div>
-        <a id="custom-login-btn" href="javascript:loginWithKakao()">
-            <img src="//k.kakaocdn.net/14/dn/btqCn0WEmI3/nijroPfbpCa4at5EIsjyf0/o.jpg" width="222" />
-        </a>
-        <p id="token-result"></p>
     </div>
 
     <!-- 네이버아이디로로그인 버튼 노출 영역 -->
-    <div id="naverIdLogin"></div>
-    <div>
+    <div id="naverIdLogin" class="m-20"></div>
+    <div class="m-20">
         <button class="api-btn" onclick="naverLogout()">네이버 로그아웃</button>
     </div>
 
+    <div class="m-20">
+        <fb:login-button scope="email" onlogin="checkLoginState();"></fb:login-button>
+    </div>
+
+    <div class="m-20">
+        <button onclick="fblogout()">페이스북 로그아웃</button>
+    </div>
+
+    <div class="m-20">
+        <div class="g-signin2" data-onsuccess="onSignIn"></div>
+    </div>
+
+
     <script type="text/javascript">
+        // SDK를 초기화 합니다. 사용할 앱의 JavaScript 키를 설정해 주세요.
+        Kakao.init('6818601cbc10e4fe23ec1e018c9d9904');
+        // SDK 초기화 여부를 판단합니다.
+        console.log(Kakao.isInitialized());
+
         Kakao.Auth.createLoginButton({
             container: '#kakao-login-btn',
             success: function (authObj) {
                 Kakao.API.request({
                     url: '/v2/user/me',
                     success: function (res) {
-                        alert(JSON.stringify(res))
+                        alert(JSON.stringify(res));
+
+                        var id = res.id;
+                        var email = res.kakao_account.email;
+                        var nickname = res.properties.nickname;
+                        var birthday = res.kakao_account.birthday;
+                        var gender = res.kakao_account.gender;
+
+                        console.log("id : " + id);
+                        console.log("email : " + email);
+                        console.log("nickname : " + nickname);
+                        console.log("birthday : " + birthday);
+                        console.log("gender : " + gender);
                     },
                     fail: function (error) {
                         alert(
@@ -67,14 +107,6 @@
             })
         }
 
-        function loginWithKakao() {
-            Kakao.Auth.authorize({
-                redirectUri: 'http://localhost:8087/loginapi',
-                reauthenticate: true
-            })
-            window.Kakao.Auth.authorize(redirectUri);
-        }
-        // 아래는 데모를 위한 UI 코드입니다.
         displayToken()
         function displayToken() {
             const token = getCookie('reauthenticate-access-token')
@@ -100,7 +132,7 @@
         var naverLogin = new naver.LoginWithNaverId(
             {
                 clientId: "oRrVJBcDfd5RwiQWGNxS",
-                callbackUrl: "http://localhost:8087/loginapi/callback",
+                callbackUrl: "http://192.168.0.134:8087/loginapi/callback",
                 isPopup: false, //팝업을 통한 연동처리 여부
                 callbackHandle: false,
                 loginButton: { color: "green", type: 3, height: 50 } //로그인 버튼의 타입을 지정
@@ -111,10 +143,122 @@
         naverLogin.init();
 
         function naverLogout() {
-            
+
             window.location = "http://nid.naver.com/nidlogin.logout";
         }
 
+        window.fbAsyncInit = function () {
+            FB.init({
+                appId: '318717096018592',
+                cookie: true,
+                xfbml: true,
+                version: 'v9.0'
+            });
+
+            FB.AppEvents.logPageView();
+
+        };
+
+        (function (d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) { return; }
+            js = d.createElement(s); js.id = id;
+            js.src = "https://connect.facebook.net/en_US/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+
+        // 로그인 상태 확인
+        FB.getLoginStatus(function (response) {
+            statusChangeCallback(response);
+        });
+
+        /* response 내용
+        {
+            status: 'connected',
+            authResponse: {
+                accessToken: '...',
+                expiresIn:'...',
+                signedRequest:'...',
+                userID:'...'
+            }
+        } */
+
+        // 페이스북 로그인 버튼 클릭시 실행 : 최신 로그인 상태 얻기
+        function checkLoginState() {
+            FB.getLoginStatus(function (response) {
+                statusChangeCallback(response);
+            });
+        }
+
+        function statusChangeCallback(response) {
+
+            console.log('statusChangeCallback');
+
+            if (response.status === 'connected') {
+                console.log(response.authResponse.accessToken);
+                // Logged into your app and Facebook.
+                testAPI();
+            } else if (response.status === 'not_authorized') {
+                document.getElementById('status').innerHTML = 'Please log ' + 'into this app.';
+            } else {
+                document.getElementById('status').innerHTML = 'Please log ' + 'into Facebook.';
+            }
+
+        }
+
+        function testAPI() {
+            console.log('Welcome! Fetching your information.... ');
+            FB.api(
+                '/me',
+                { "fields": "id, name, email" },
+                function (response) {
+                    // Insert your code here
+                    console.log('Successful login for: ' + response.name);
+
+                    console.log(JSON.stringify(response));
+                }
+            );
+        }
+
+        function fblogout() {
+
+            FB.logout(function (response) {
+                window.location.reload();
+            });
+        }
+
+        // 구글 로그인
+        function onSignIn(googleUser) {
+            var profile = googleUser.getBasicProfile();
+            console.log('ID: ' + profile.getId());
+            console.log('Full Name: ' + profile.getName());
+            console.log('Given Name: ' + profile.getGivenName());
+            console.log('Family Name: ' + profile.getFamilyName());
+            console.log('Image URL: ' + profile.getImageUrl());
+            console.log('Email: ' + profile.getEmail());
+        }
+
+
+        // 아임포트 본인인증 api
+        var IMP = window.IMP; // 생략해도 괜찮습니다.
+        IMP.init("imp71497251"); // "imp00000000" 대신 발급받은 "가맹점 식별코드"를 사용합니다.
+
+        // IMP.certification(param, callback) 호출
+        IMP.certification({ // param
+            //merchant_uid: "ORD20180131-0000011"
+        }, function (rsp) { // callback
+            if (rsp.success) { // 인증 성공 시
+                // jQuery로 HTTP 요청
+                jQuery.ajax({
+                    url: "https://www.myservice.com/certifications", // 서비스 웹서버
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    data: { imp_uid: rsp.imp_uid }
+                });
+            } else {
+                alert("인증에 실패하였습니다. 에러 내용: " + rsp.error_msg);
+            }
+        });
     </script>
 </body>
 
