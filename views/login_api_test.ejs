@@ -6,7 +6,7 @@
     <!-- google meta -->
     <meta name="google-signin-scope" content="profile email">
     <meta name="google-signin-client_id"
-        content="444209988564-icuf01ha0lv19lco18abrk3a1unc7nrd.apps.googleusercontent.com">
+        content="444209988564-3g1la776ojnhnmqceajlgsa9dk3il98k.apps.googleusercontent.com">
     <title>LOGIN API TEST</title>
     <!-- kakao js -->
     <script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
@@ -21,8 +21,6 @@
     <script src="https://apis.google.com/js/platform.js" async defer></script>
     <!-- jQuery -->
     <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
-    <!-- iamport.payment.js -->
-    <script type="text/javascript" src="https://cdn.iamport.kr/js/iamport.payment-1.1.5.js"></script>
 </head>
 <style>
     .m-20 {
@@ -83,6 +81,8 @@
                         console.log("nickname : " + nickname);
                         console.log("birthday : " + birthday);
                         console.log("gender : " + gender);
+                        console.log("accesstoken : " + authObj.access_token);
+                        console.log("refreshtoken : " + authObj.refresh_token);
                     },
                     fail: function (error) {
                         alert(
@@ -238,27 +238,6 @@
             console.log('Email: ' + profile.getEmail());
         }
 
-
-        // 아임포트 본인인증 api
-        var IMP = window.IMP; // 생략해도 괜찮습니다.
-        IMP.init("imp71497251"); // "imp00000000" 대신 발급받은 "가맹점 식별코드"를 사용합니다.
-
-        // IMP.certification(param, callback) 호출
-        IMP.certification({ // param
-            //merchant_uid: "ORD20180131-0000011"
-        }, function (rsp) { // callback
-            if (rsp.success) { // 인증 성공 시
-                // jQuery로 HTTP 요청
-                jQuery.ajax({
-                    url: "https://www.myservice.com/certifications", // 서비스 웹서버
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    data: { imp_uid: rsp.imp_uid }
-                });
-            } else {
-                alert("인증에 실패하였습니다. 에러 내용: " + rsp.error_msg);
-            }
-        });
     </script>
 </body>
 

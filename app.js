@@ -10,7 +10,21 @@ var apiRouter = require('./routes/api');
 
 const request = require('request');
 
+/* session */
+var session = require('express-session');
+var FileStore = require('session-file-store')(session);
+var cookieParser = require('cookie-parser');
+
 var app = express();
+
+/* session */
+app.use(cookieParser());
+app.use(session({               // 세션적용
+    secret: 'keyboard cat',     // 세션 암호화(필수)
+    resave: false,              // 항상 저장할지(false권장)
+    saveUninitialized: true,    // 초기화되지 않은채 저장
+    store: new FileStore()      // 데이터 저장형식
+}));
 
 // view engine setup
 app.set('views', path.join(__dirname, '/views'));

@@ -2,10 +2,21 @@
 const { json } = require('body-parser');
 const { request } = require('express');
 var express = require('express');
+
+/* session */
+var session = require('express-session');
+var FileStore = require('session-file-store')(session);
+var cookieParser = require('cookie-parser');
+
+/* JWT */
+var jwt = require('jsonwebtoken');
+var secret_key = 'yuriminfosysqw12qw12';   // JWT 시크릿키
+
 var router = express.Router();
 const mssql = require('mssql');
 const multer = require('multer');
 const path = require('path');
+
 /* GET home page. */
 
 const nodemailer = require("nodemailer");
@@ -19,6 +30,13 @@ const { JSDOM } = jsdom;
 
 // var DomParser = require('dom-parser');
 
+
+/* naver id login */
+var client_id = '7akXsWfmKDmEnrJ10h7y';
+var state = "RAMDOM_STATE";
+var redirectURI_Session = encodeURI("http://192.168.0.134:8087/callbackSession");
+var redirectURI_Jwt = encodeURI("http://192.168.0.134:8087/callbackJwt");
+var api_url = "";
 
 const config = {
     // "user"      : "sa",
@@ -44,22 +62,140 @@ const config = {
     }
 }
 
+router.get('/naverLoginSession', function (req, res, next) {
+    try {
+        console.log('naverlogin');
+        api_url = 'https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=' + client_id + '&redirect_uri=' + redirectURI_Session + '&state=' + state;
+
+        console.log(req.session);
+        console.log(req.cookies);
+
+        if (req.session == undefined) {
+            var checkingAccessToken = '';
+            var checkingRefreshToken = '';
+            app.use(cookieParser());
+            app.use(session({               // 세션적용
+                secret: 'keyboard cat',     // 세션 암호화(필수)
+                resave: false,              // 항상 저장할지(false권장)
+                saveUninitialized: true,    // 초기화되지 않은채 저장
+                store: new FileStore()      // 데이터 저장형식
+            }));
+        } else {
+            var checkingAccessToken = req.session.accessToken;
+            var checkingRefreshToken = req.session.refreshToken;
+        }
+        console.log('checkingAccessToken : ' + checkingAccessToken);
+        console.log('checkingRefreshToken : ' + checkingRefreshToken);
+
+        // MSSQL에 해당 토큰이 있는지 확인
+        mssql.connect(config, function (err) {
+            console.log('mssql connect');
+            var mssqlRequest = new mssql.Request();
+            var queryString = "EXEC p_SLI '" + checkingAccessToken + "', '" + checkingRefreshToken + "'";
+            mssqlRequest.query(queryString, function (err, result) {
+                var returnData = result.recordset;
+                console.log(returnData[0].p_result);
+                if (returnData[0].p_result == '자동로그인') {
+                    // accessToken, refreshToken 모두 있는 경우(데이터 있음)
+                    console.log('There is');
+
+                    res.json({ data: 'There is', url: "welcomesession" });
+
+                } else if (returnData[0].p_result == '사용자등록') {
+                    // refreshToken 없는 경우(데이터 없음)
+                    console.log('None');
+                    /* res.writeHead(200, { 'Content-Type': 'text/html;charset=utf-8' });
+                    res.end("<a href='" + api_url + "'><img height='50' src='http://static.nid.naver.com/oauth/small_g_in.PNG'/></a>"); */
+                    res.json({ data: 'None', url: api_url });
+                }
+            })
+        })
+    }
+    catch (err) {
+        console.log(err);
+    }
+});
+
+router.get('/naverLoginJwt', function (req, res, next) {
+    try {
+        console.log('naverLoginJwt');
+        api_url = 'https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=' + client_id + '&redirect_uri=' + redirectURI_Jwt + '&state=' + state;
+
+        console.log(req.cookies.user);
+
+        if (req.cookies.user == undefined) {
+            // 쿠키에 user 없음
+            _checkingAccessToken = '';
+            _checkingRefreshToken = '';
+
+        } else {
+            // 쿠키에 user 있음
+            var decoded = jwt.verify(req.cookies.user, secret_key);
+            console.log(decoded);
+
+            _checkingAccessToken = decoded.accessToken;
+            _checkingRefreshToken = decoded.refreshToken;
+        }
+
+        // MSSQL에 해당 토큰이 있는지 확인
+        mssql.connect(config, function (err) {
+            console.log('mssql connect');
+            var mssqlRequest = new mssql.Request();
+            var queryString = "EXEC p_SLI '" + _checkingAccessToken + "', '" + _checkingRefreshToken + "'";
+            mssqlRequest.query(queryString, function (err, result) {
+                var returnData = result.recordset;
+                console.log(returnData[0].p_result);
+                if (returnData[0].p_result == '자동로그인') {
+                    // accessToken, refreshToken 모두 있는 경우(데이터 있음)
+                    console.log('There is');
+
+                    res.json({ data: 'There is', url: "welcomejwt" });
+
+                } else if (returnData[0].p_result == '사용자등록') {
+                    // refreshToken 없는 경우(데이터 없음)
+                    console.log('None');
+                    /* res.writeHead(200, { 'Content-Type': 'text/html;charset=utf-8' });
+                    res.end("<a href='" + api_url + "'><img height='50' src='http://static.nid.naver.com/oauth/small_g_in.PNG'/></a>"); */
+                    res.json({ data: 'None', url: api_url });
+                }
+            })
+        })
+    }
+    catch (err) {
+        console.log(err);
+    }
+});
+
+
+// 로그아웃 처리(세션)
+router.post('/naverLogoutSession', function (req, res) {
+    // 세션삭제
+    req.session.destroy();
+    res.json({ url: "naverlogin" });
+});
+
+// 로그아웃 처리(JWT)
+router.post('/naverLogoutJwt', function (req, res) {
+    // user 쿠키 삭제
+    res.clearCookie('user');
+    res.json({ url: "naverlogin" });
+});
 
 // "/certifications"에 대한 POST 요청을 처리하는 controller
 router.post("/certifications", async (request, response) => {
     console.log(request.body);
     const { imp_uid } = request.body; // request의 body에서 imp_uid 추출
-    
+
     try {
         // 인증 토큰 발급 받기
         const getToken = await axios({
-          url: "https://api.iamport.kr/users/getToken",
-          method: "post", // POST method
-          headers: { "Content-Type": "application/json" }, // "Content-Type": "application/json"
-          data: {
-            imp_key: "imp_apikey", // REST API키
-            imp_secret: "ekKoeW8RyKuT0zgaZsUtXXTLQ4AhPFW3ZGseDA6bkA5lamv9OqDMnxyeB9wqOsuO9W3Mx9YSJ4dTqJ3f" // REST API Secret
-          }
+            url: "https://api.iamport.kr/users/getToken",
+            method: "post", // POST method
+            headers: { "Content-Type": "application/json" }, // "Content-Type": "application/json"
+            data: {
+                imp_key: "imp_apikey", // REST API키
+                imp_secret: "ekKoeW8RyKuT0zgaZsUtXXTLQ4AhPFW3ZGseDA6bkA5lamv9OqDMnxyeB9wqOsuO9W3Mx9YSJ4dTqJ3f" // REST API Secret
+            }
         });
         const { access_token } = getToken.data.response; // 인증 토큰
 
@@ -70,7 +206,7 @@ router.post("/certifications", async (request, response) => {
             headers: { "Authorization": access_token } // 인증 토큰 Authorization header에 추가
         });
         const certificationsInfo = getCertifications.data.response; // 조회한 인증 정보
-    } catch(e) {
+    } catch (e) {
         console.error(e);
     }
 });
